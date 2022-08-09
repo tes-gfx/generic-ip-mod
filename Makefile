@@ -1,16 +1,18 @@
 KERNEL_SRC := $(SDKTARGETSYSROOT)/usr/src/kernel
 MODULE_ARTIFACT := genip.ko
 
+SRC = $(shell pwd)
+
 .PHONY:
 all: modules
 		
 .PHONY:
 modules:
-	make -C $(KERNEL_SRC) M=$(shell pwd) modules
+	make -C $(KERNEL_SRC) M=$(SRC) modules
 
-#.PHONY:
-#modules_install:
-#	make -C $(KERNEL_SRC) M=$(SRC) modules_install
+.PHONY:
+modules_install:
+	make -C $(KERNEL_SRC) M=$(SRC) modules_install
 
 .PHONY:
 clean:
