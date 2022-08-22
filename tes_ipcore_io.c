@@ -26,7 +26,6 @@ struct file_operations tes_ipcore_fops = {
 uint32_t tes_ipcore_read_reg(void *reg_base_virt, uint32_t reg_id) {
 	// shift == *4 == conversion from register ids aka word addresses to byte addresses
 	uint32_t value = ioread32((void *)((size_t)reg_base_virt + (reg_id << 2)));
-	// pr_info("Read from id:0x%0x | addr:0x%08lx | val:0x%08x", reg_id, ((unsigned long)reg_base_virt + (reg_id << 2)),value);
 	return value;
 }
 void tes_ipcore_write_reg(void *reg_base_virt, uint32_t reg_id, uint32_t value) {
@@ -40,7 +39,7 @@ static int tes_ipcore_open(struct inode *ip, struct file *fp) {
 
 	tes_device = tes_ipcore_global->device_by_minor[minor];
 
-	dev_info(tes_device->base_dev, "Device file opened!\n");
+	dev_dbg(tes_device->base_dev, "Device file opened!\n");
 	fp->private_data = tes_device;
 
 	return 0;

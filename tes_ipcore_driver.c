@@ -129,7 +129,7 @@ static int tes_ipcore_probe(struct platform_device *pdev) {
 
 	// register device and create sys-file
 	tes_dev->base_dev = device_create(tes_ipcore_global->class, NULL,
-		current_dev_t, tes_dev, "%lx.%s", tes_dev->base_phys, tes_dev->platform_data->fs_dev_name);
+		current_dev_t, tes_dev, tes_dev->platform_data->fs_dev_name);
 	if (!tes_dev->base_dev) {
 		dev_err(tes_dev->base_dev, "can't create device: %s\n", tes_dev->platform_data->fs_dev_name);
 		result = -EBUSY;
