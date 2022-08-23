@@ -22,5 +22,4 @@ clean:
 
 .PHONY:
 deploy: all
-#	scp $(MODULE_ARTIFACT) root@$(BOARD_IP):/lib/modules/5.4.124-altera/extra
-	scp $(MODULE_ARTIFACT) root@$(BOARD_IP):/home/root
+	scp $(MODULE_ARTIFACT) root@$(BOARD_IP):/lib/modules/5.4.124-altera/extra

@@ -113,8 +113,6 @@ static ssize_t tes_ipcore_read(struct file *filp, char __user *buff, size_t coun
 	unsigned long flags;
 	int temp;
 
-	pr_info("tes_ipcore_read called\n");
-
 	wait_event_interruptible(dev->irq_waitq, dev->irq_stat);
 
 	spin_lock_irqsave(&dev->irq_slck, flags);

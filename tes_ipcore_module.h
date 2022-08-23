@@ -80,9 +80,8 @@ const static struct tes_ipcore_platform_data tes_ipcore_dhd_pdata = {
 const static struct tes_ipcore_platform_data tes_ipcore_warp_pdata = {
 	.fs_dev_name = "warp",
 	.irq_name = "warp_irq",
-	.version_reg = 0xB,//TODO change registers when hardware is updated
-	/* todo: reg mask and expected value */
-	.irq_status_reg = 0xE};
+	.version_reg = 0x0,
+	.irq_status_reg = 0x11};
 
 #define TES_IPCORE_COMPAT_STR_D2D "tes,d2d-1.0"
 const static struct tes_ipcore_platform_data tes_ipcore_d2d_pdata = {
