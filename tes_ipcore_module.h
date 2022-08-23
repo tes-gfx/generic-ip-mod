@@ -20,19 +20,17 @@
 //#define TES_IPCORE_IOCTL_REG_PREFIX	  (0x80)
 // Copy Settings from device tree to userspace
 #define TES_IPCORE_IOCTL_NR_SETTINGS (0x01)
-// set the current working register; a register read/write will end up there
-#define TES_IPCORE_IOCTL_NR_WORKING_REG (0x02)
-// one number for read and write, since that is determined by _IOW / _IOR
-#define TES_IPCORE_IOCTL_NR_REG_ACCESS (0x03)
+// write a register
+#define TES_IPCORE_IOCTL_NR_REG_WRITE (0x02)
+// read a register
+#define TES_IPCORE_IOCTL_NR_REG_READ (0x03)
 
-// argument = pointer to a new register id
-#define TES_IPCORE_IOCTL_SET_REG (_IOW(TES_IPCORE_IOCTL_TYPE, TES_IPCORE_IOCTL_NR_WORKING_REG, uint32_t))
-// argument = pointer to a register id
-#define TES_IPCORE_IOCTL_W (_IOW(TES_IPCORE_IOCTL_TYPE, TES_IPCORE_IOCTL_NR_REG_ACCESS, uint32_t))
-// argument = pointer to a uint32_t to save the read value
-#define TES_IPCORE_IOCTL_R (_IOR(TES_IPCORE_IOCTL_TYPE, TES_IPCORE_IOCTL_NR_REG_ACCESS, uint32_t))
+// argument = pointer to tes_ipcore_reg_access
+#define TES_IPCORE_IOCTL_W (_IOW(TES_IPCORE_IOCTL_TYPE, TES_IPCORE_IOCTL_NR_REG_WRITE, struct tes_ipcore_reg_access))
+// argument = pointer to tes_ipcore_reg_access
+#define TES_IPCORE_IOCTL_R (_IOWR(TES_IPCORE_IOCTL_TYPE, TES_IPCORE_IOCTL_NR_REG_READ, struct tes_ipcore_reg_access))
 // argument = pointer to a tes_ipcore_settings to write the information to
-#define TES_IPCORE_IOCTL_GET_SETTINGS (_IOR(TES_IPCORE_IOCTL_TYPE, TES_IPCORE_IOCTL_NR_SETTINGS, tes_ipcore_settings))
+#define TES_IPCORE_IOCTL_GET_SETTINGS (_IOR(TES_IPCORE_IOCTL_TYPE, TES_IPCORE_IOCTL_NR_SETTINGS, struct tes_ipcore_settings))
 
 /*
  * char device config & device tree matching
@@ -97,6 +95,13 @@ const static struct tes_ipcore_platform_data tes_ipcore_d2d_pdata = {
 struct tes_ipcore_settings {
 	size_t base_phys; // start address of the registers
 	size_t span;	  // size of the register area
+};
+
+/* This struct is used for reading/writing registers.
+   Use u64 instead of pointer to stay compatible with 32/64 bit systems. */
+struct tes_ipcore_reg_access {
+	__u64 offset;         /* in, register ID to read from / write to */
+	__u32 value;          /* in/out, register value read or written */
 };
 
 #endif // TES_IPCORE_MODULE_H

@@ -48,13 +48,9 @@ static int tes_ipcore_open(struct inode *ip, struct file *fp) {
 static long tes_ipcore_ioctl(struct file *fp, unsigned int cmd, unsigned long arg) {
 	struct tes_ipcore_device *tes_dev = fp->private_data;
 	unsigned int cmd_nr;
+	struct tes_ipcore_reg_access ipcore_reg_access;
 	struct tes_ipcore_settings ipcore_settings;
-	uint32_t *argptr = (uint32_t *)arg;
 	uint32_t tmp;
-
-	static size_t current_working_reg;
-
-	//pr_info("IOCRTL: cmd: 0x%08x; arg: 0x%08lx", cmd, arg);
 
 	cmd_nr = _IOC_NR(cmd);
 	if (_IOC_TYPE(cmd) != TES_IPCORE_IOCTL_TYPE) {
@@ -62,48 +58,41 @@ static long tes_ipcore_ioctl(struct file *fp, unsigned int cmd, unsigned long ar
 		pr_warn("no action will be performed!\n");
 		return -EINVAL;
 	}
-	if (_IOC_DIR(cmd) == _IOC_WRITE) {
-		switch (cmd_nr) {
-			// write to a register
-		case TES_IPCORE_IOCTL_NR_REG_ACCESS:
-			tes_ipcore_write_reg(tes_dev->mmio, current_working_reg, arg);
-			break;
 
-			// set the working register
-		case TES_IPCORE_IOCTL_NR_WORKING_REG:
-			if (arg > tes_dev->span) {
-				return -EINVAL;
-			} else {
-				current_working_reg = arg;
-			}
-			break;
-		default:
-			return -EINVAL;
+	switch (cmd_nr) {
+	// write to a register
+	case TES_IPCORE_IOCTL_NR_REG_WRITE:
+		if (copy_from_user(&ipcore_reg_access, (struct ipcore_reg_access __user *)arg,
+				sizeof(ipcore_reg_access)))
+			return -EFAULT;
+		tes_ipcore_write_reg(tes_dev->mmio, ipcore_reg_access.offset,
+				ipcore_reg_access.value);
+		break;
+
+	// read from a register
+	case TES_IPCORE_IOCTL_NR_REG_READ:
+		if (copy_from_user(&ipcore_reg_access, (struct ipcore_reg_access __user *)arg,
+				sizeof(ipcore_reg_access)))
+			return -EFAULT;
+		ipcore_reg_access.value = tes_ipcore_read_reg(tes_dev->mmio, ipcore_reg_access.offset);
+		if (copy_to_user((struct ipcore_reg_access __user *)arg,
+				&ipcore_reg_access, sizeof(ipcore_reg_access)))
+			return -EFAULT;
+		break;
+
+	// retrieve the register memory settings
+	case TES_IPCORE_IOCTL_NR_SETTINGS:
+		ipcore_settings.base_phys = tes_dev->base_phys;
+		ipcore_settings.span = tes_dev->span;
+
+		if (copy_to_user((void *)arg, (void *)&ipcore_settings,
+							sizeof(struct tes_ipcore_settings))) {
+			dev_err(fp->private_data, "error while copying settings to user space\n");
+			return -EFAULT;
 		}
-		return 0;
-	} else if (_IOC_DIR(cmd) == _IOC_READ) {
-		switch (cmd_nr) {
-			// read from a register
-		case TES_IPCORE_IOCTL_NR_REG_ACCESS:
-			tmp = tes_ipcore_read_reg(tes_dev->mmio, current_working_reg);
-			if (!put_user(tmp, argptr))
-				return -EFAULT;
-			break;
-
-			// retrieve the register memory settings
-		case TES_IPCORE_IOCTL_NR_SETTINGS:
-			ipcore_settings.base_phys = tes_dev->base_phys;
-			ipcore_settings.span = tes_dev->span;
-
-			if (copy_to_user((void *)arg, (void *)&ipcore_settings,
-							 sizeof(struct tes_ipcore_settings))) {
-				dev_err(fp->private_data, "error while copying settings to user space\n");
-				return -EFAULT;
-			}
-			break;
-		default:
-			return -EINVAL;
-		}
+		break;
+	default:
+		return -EINVAL;
 	}
 	return 0;
 }
