@@ -48,7 +48,7 @@ static int genip_open(struct inode *ip, struct file *fp) {
 }
 
 static long genip_ioctl(struct file *fp, unsigned int cmd, unsigned long arg) {
-	struct genip_device *tes_dev = fp->private_data;
+	struct genip_device *gdev = fp->private_data;
 	unsigned int cmd_nr;
 	struct genip_reg_access ipcore_reg_access;
 	struct genip_settings ipcore_settings;
@@ -66,7 +66,7 @@ static long genip_ioctl(struct file *fp, unsigned int cmd, unsigned long arg) {
 		if (copy_from_user(&ipcore_reg_access, (struct ipcore_reg_access __user *)arg,
 				sizeof(ipcore_reg_access)))
 			return -EFAULT;
-		genip_write_reg(tes_dev->mmio, ipcore_reg_access.offset,
+		genip_write_reg(gdev->mmio, ipcore_reg_access.offset,
 				ipcore_reg_access.value);
 		break;
 
@@ -75,7 +75,12 @@ static long genip_ioctl(struct file *fp, unsigned int cmd, unsigned long arg) {
 		if (copy_from_user(&ipcore_reg_access, (struct ipcore_reg_access __user *)arg,
 				sizeof(ipcore_reg_access)))
 			return -EFAULT;
-		ipcore_reg_access.value = genip_read_reg(tes_dev->mmio, ipcore_reg_access.offset);
+
+		if(ipcore_reg_access.offset == gdev->platform_data->irq_status_reg)
+			dev_warn(gdev->base_dev, "User space access on real HW IRQ status. "
+					"It should only be emulated for user space.");
+
+		ipcore_reg_access.value = genip_read_reg(gdev->mmio, ipcore_reg_access.offset);
 		if (copy_to_user((struct ipcore_reg_access __user *)arg,
 				&ipcore_reg_access, sizeof(ipcore_reg_access)))
 			return -EFAULT;
@@ -83,8 +88,8 @@ static long genip_ioctl(struct file *fp, unsigned int cmd, unsigned long arg) {
 
 	// retrieve the register memory settings
 	case GENIP_IOCTL_NR_SETTINGS:
-		ipcore_settings.base_phys = tes_dev->base_phys;
-		ipcore_settings.span = tes_dev->span;
+		ipcore_settings.base_phys = gdev->base_phys;
+		ipcore_settings.span = gdev->span;
 
 		if (copy_to_user((void *)arg, (void *)&ipcore_settings,
 							sizeof(struct genip_settings))) {
@@ -118,7 +123,7 @@ static ssize_t genip_read(struct file *filp, char __user *buff, size_t count, lo
 	return 0;
 }
 static ssize_t genip_write(struct file *file, const char __user *user_input, size_t count, loff_t *offset) {
-	struct genip_device *ipcore_dev = file->private_data;
+	struct genip_device *gdev = file->private_data;
 	char buf[33];
 	size_t left_to_copy = count;
 	size_t tocopy = 0;
@@ -126,7 +131,7 @@ static ssize_t genip_write(struct file *file, const char __user *user_input, siz
 	size_t result = 0;
 	const char __user *curr_user_input = user_input;
 
-	dev_warn(ipcore_dev->base_dev, 
+	dev_warn(gdev->base_dev, 
 			 "This driver does not have a functional interface via a file write.\n"
 			 "Please use iocrtl to read/write; and a file read to wait for an IRQ!\n"
 			 "This is for debug purposes only; the following data was sent:\n");
@@ -134,11 +139,11 @@ static ssize_t genip_write(struct file *file, const char __user *user_input, siz
 		tocopy = (left_to_copy < 32) ? left_to_copy : 32;
 		result = copy_from_user(buf, curr_user_input, tocopy);
 		if (result > 0) { 
-			dev_warn(ipcore_dev->base_dev, "Could not copy %d bytes from user!", result);
+			dev_warn(gdev->base_dev, "Could not copy %d bytes from user!", result);
 		}
 		actually_copied = tocopy - result;
 		buf[tocopy] = 0;
-		dev_info(ipcore_dev->base_dev, "Data from user: %s", buf);
+		dev_info(gdev->base_dev, "Data from user: %s", buf);
 		left_to_copy -= actually_copied;
 		curr_user_input += actually_copied;
 	}
