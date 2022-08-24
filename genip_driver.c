@@ -22,6 +22,7 @@
 
 #include "genip_driver.h"
 #include "genip_io.h"
+#include "genip_devices.h"
 #include "genip_module.h"
 // TODO cleanup includes
 

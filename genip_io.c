@@ -7,6 +7,7 @@
 #include <linux/uaccess.h>
 
 #include "genip_driver.h"
+#include "genip_devices.h"
 #include "genip_io.h"
 #include "genip_module.h"
 
@@ -28,6 +29,7 @@ uint32_t genip_read_reg(void *reg_base_virt, uint32_t reg_id) {
 	uint32_t value = ioread32((void *)((size_t)reg_base_virt + (reg_id << 2)));
 	return value;
 }
+
 void genip_write_reg(void *reg_base_virt, uint32_t reg_id, uint32_t value) {
 	// shift == *4 == conversion from register ids aka word addresses to byte addresses
 	iowrite32(value, (void *)((size_t)reg_base_virt + (reg_id << 2)));
@@ -148,8 +150,8 @@ irqreturn_t genip_irq_handler(int irq, void *dev_raw) {
 	unsigned long flags;
 	struct genip_device *dev = dev_raw;
 
-	int irq_status = genip_read_reg(dev->mmio, dev->platform_data->irq_status_reg); 
-	genip_write_reg(dev->mmio, dev->platform_data->irq_status_reg, irq_status);		
+	uint32_t irq_status = genip_read_reg(dev->mmio, dev->platform_data->irq_status_reg); 
+	dev->platform_data->irq_clear_func(dev, irq_status);
 
 	spin_lock_irqsave(&dev->irq_slck, flags);
 	dev->irq_stat |= irq_status;
