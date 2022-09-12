@@ -7,8 +7,7 @@
 #include <linux/ioctl.h>
 #include <linux/types.h>
 #else
-#include <stdint.h>
-#include <sys/ioctl.h>
+#include <linux/types.h>
 #endif //__KERNEL__
 
 /*
