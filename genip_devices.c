@@ -33,7 +33,7 @@ void d2d_clear_irq(struct genip_device *gdev, uint32_t irq_status)
 
     status_reg.value = irq_status;
     clear_reg.bits.enable_enum = 0;
-    clear_reg.bits.enable_bus = 1;
+    clear_reg.bits.enable_bus = 0;
     clear_reg.bits.enable_dlist = 1;
     clear_reg.bits.clr_enum = status_reg.bits.irq_enum;
     clear_reg.bits.clr_dlist = status_reg.bits.irq_dlist;

@@ -76,10 +76,6 @@ static long genip_ioctl(struct file *fp, unsigned int cmd, unsigned long arg) {
 				sizeof(ipcore_reg_access)))
 			return -EFAULT;
 
-		if(ipcore_reg_access.offset == gdev->platform_data->irq_status_reg)
-			dev_warn(gdev->base_dev, "User space access on real HW IRQ status. "
-					"It should only be emulated for user space.");
-
 		ipcore_reg_access.value = genip_read_reg(gdev->mmio, ipcore_reg_access.offset);
 		if (copy_to_user((struct ipcore_reg_access __user *)arg,
 				&ipcore_reg_access, sizeof(ipcore_reg_access)))
