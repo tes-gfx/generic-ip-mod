@@ -8,6 +8,7 @@
 #define GENIP_COMPAT_STR_DHD "tes,dhd-1.0"
 #define GENIP_COMPAT_STR_WARP "tes,warp-1.0"
 #define GENIP_COMPAT_STR_D2D "tes,d2d-1.0"
+#define GENIP_COMPAT_STR_FBD "tes,fbd-1.0"
 
 // struct to hold data specific to each IP that is compatible with this driver
 struct genip_platform_data {
@@ -33,5 +34,6 @@ extern const struct genip_platform_data genip_cdc_pdata;
 extern const struct genip_platform_data genip_dhd_pdata;
 extern const struct genip_platform_data genip_warp_pdata;
 extern const struct genip_platform_data genip_d2d_pdata;
+extern const struct genip_platform_data genip_fbd_pdata;
 
 #endif /* __GENIP_DEVICES__ */

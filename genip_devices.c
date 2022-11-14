@@ -77,3 +77,12 @@ const struct genip_platform_data genip_d2d_pdata = {
 	.irq_status_reg = 0x00,
 	.irq_clear_reg = 0x30,
 	.irq_clear_func = d2d_clear_irq,}; //TODO IRQ status reg
+
+const struct genip_platform_data genip_fbd_pdata = {
+	.fs_dev_name = "fbd",
+	.irq_name = "fbd_irq",
+	.version_reg = 0,
+	/* todo: reg mask and expected value */
+	.irq_status_reg = 0x02,
+	.irq_clear_reg = 0x02,
+	.irq_clear_func = generic_clear_irq,};
