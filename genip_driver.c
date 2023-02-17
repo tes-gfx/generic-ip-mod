@@ -78,6 +78,14 @@ static int genip_probe(struct platform_device *pdev) {
 	dev_t current_dev_t;
 	uint32_t hwversion;
 
+	struct genip_device *str_dev;       /* required to readout device data from phandles */
+	struct genip_stream_dev *info_dev;  /* holding streaming device name and layer info */
+	struct platform_device *str_pdev;
+	struct of_phandle_args str_args;
+	int str_idx = 0;                    /* index for streaming devices */
+	int str_anz_dev = 0;                /* count of streaming devices */
+	int str_ret;                        /* returnvalue of parse_phandle */
+
 	// calculate the new dev_t for the device created here
 	current_dev_t = MKDEV(genip_global->major, genip_global->dev_count);
 	genip_global->dev_count++;
@@ -152,6 +160,61 @@ static int genip_probe(struct platform_device *pdev) {
 	// probe finished; print some infos
 	genip_print_infos(tes_dev);
 
+	// check if device property exists
+	if (device_property_present((struct device *)&pdev->dev, "stream_dev")) {
+		// alloc memory for phandle device data
+		str_dev = devm_kzalloc(&pdev->dev, sizeof(struct genip_device), GFP_KERNEL);
+		if (!str_dev) {
+			dev_err(&pdev->dev,
+					"Memory allocation for driver struct failed!\n");
+			result = -ENOMEM;
+			goto ALLOC_MEM_FAILED;
+		}
+
+		while (str_idx < GENIP_MAX_STREAMS) {
+			// check if a phandle exists in device property
+			str_ret = of_parse_phandle_with_fixed_args(((struct device *)&pdev->dev)->of_node, "stream_dev", 1, str_idx, &str_args);
+			if (str_ret == 0) {
+				// get platform_device from streaming device
+				str_pdev = of_find_device_by_node(str_args.np);
+				if (!str_pdev) {
+					result = -ENODEV;
+					goto STREAM_DEVICE_FAILED;
+				}
+
+				// retrieve data from device tree
+				of_device_match = of_match_device(genip_of_ids, &str_pdev->dev);
+				str_dev->platform_data = of_device_match->data;
+				platform_set_drvdata(str_pdev, str_dev);
+				str_dev->base_dev = &str_pdev->dev;
+
+				// alloc memory for phandle device data
+				info_dev = devm_kzalloc(&pdev->dev, sizeof(struct genip_stream_dev), GFP_KERNEL);
+				if (!info_dev) {
+					dev_err(&pdev->dev,
+							"Memory allocation for driver struct failed!\n");
+					result = -ENOMEM;
+					goto ALLOC_MEM_FAILED;
+				}
+
+				// copy fd name and layer to info device structure
+				strncpy(info_dev->dev_name, str_dev->platform_data->fs_dev_name, DEV_NAME_MAX_LEN);
+				info_dev->layer = str_args.args[0];
+
+				// fill tes_dev with info
+				tes_dev->stream_dev[str_idx] = info_dev;
+				dev_info(tes_dev->base_dev, "Found streaming device /dev/%s connected to layer %d\n", 
+									tes_dev->stream_dev[str_idx]->dev_name, tes_dev->stream_dev[str_idx]->layer);
+
+				str_anz_dev++;
+			} else {
+				break;
+			}
+			str_idx++;
+		}
+		tes_dev->connected_stream_dev_count = str_anz_dev;
+	}
+
 	return 0;
 
 IRQ_FAILED:
@@ -160,6 +223,7 @@ DEVICE_CREATE_FAILED:
 IOREMAP_FAILED:
 UNSUPPORTED:
 ALLOC_MEM_FAILED:
+STREAM_DEVICE_FAILED:
 	genip_global->dev_count--; // this was calculated at the start of the function
 
 	return result;
