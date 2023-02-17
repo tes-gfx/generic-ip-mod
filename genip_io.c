@@ -52,6 +52,10 @@ static long genip_ioctl(struct file *fp, unsigned int cmd, unsigned long arg) {
 	unsigned int cmd_nr;
 	struct genip_reg_access ipcore_reg_access;
 	struct genip_settings ipcore_settings;
+	struct genip_stream_dev stream_dev[GENIP_MAX_STREAMS];
+	int str_idx = 0;
+	int str_count = 0;
+	size_t cpy_size = 0;
 
 	cmd_nr = _IOC_NR(cmd);
 	if (_IOC_TYPE(cmd) != GENIP_IOCTL_TYPE) {
@@ -61,40 +65,66 @@ static long genip_ioctl(struct file *fp, unsigned int cmd, unsigned long arg) {
 	}
 
 	switch (cmd_nr) {
-	// write to a register
-	case GENIP_IOCTL_NR_REG_WRITE:
-		if (copy_from_user(&ipcore_reg_access, (struct ipcore_reg_access __user *)arg,
-				sizeof(ipcore_reg_access)))
-			return -EFAULT;
-		genip_write_reg(gdev->mmio, ipcore_reg_access.offset,
-				ipcore_reg_access.value);
-		break;
+		// write to a register
+		case GENIP_IOCTL_NR_REG_WRITE:
+			if (copy_from_user(&ipcore_reg_access, (struct ipcore_reg_access __user *)arg,
+					sizeof(ipcore_reg_access)))
+				return -EFAULT;
+			genip_write_reg(gdev->mmio, ipcore_reg_access.offset,
+					ipcore_reg_access.value);
+			break;
 
-	// read from a register
-	case GENIP_IOCTL_NR_REG_READ:
-		if (copy_from_user(&ipcore_reg_access, (struct ipcore_reg_access __user *)arg,
-				sizeof(ipcore_reg_access)))
-			return -EFAULT;
+		// read from a register
+		case GENIP_IOCTL_NR_REG_READ:
+			if (copy_from_user(&ipcore_reg_access, (struct ipcore_reg_access __user *)arg,
+					sizeof(ipcore_reg_access)))
+				return -EFAULT;
 
-		ipcore_reg_access.value = genip_read_reg(gdev->mmio, ipcore_reg_access.offset);
-		if (copy_to_user((struct ipcore_reg_access __user *)arg,
-				&ipcore_reg_access, sizeof(ipcore_reg_access)))
-			return -EFAULT;
-		break;
+			ipcore_reg_access.value = genip_read_reg(gdev->mmio, ipcore_reg_access.offset);
+			if (copy_to_user((struct ipcore_reg_access __user *)arg,
+					&ipcore_reg_access, sizeof(ipcore_reg_access)))
+				return -EFAULT;
+			break;
 
-	// retrieve the register memory settings
-	case GENIP_IOCTL_NR_SETTINGS:
-		ipcore_settings.base_phys = gdev->base_phys;
-		ipcore_settings.span = gdev->span;
+		// retrieve the register memory settings
+		case GENIP_IOCTL_NR_SETTINGS:
+			ipcore_settings.base_phys = gdev->base_phys;
+			ipcore_settings.span = gdev->span;
 
-		if (copy_to_user((void *)arg, (void *)&ipcore_settings,
-							sizeof(struct genip_settings))) {
-			dev_err(fp->private_data, "error while copying settings to user space\n");
-			return -EFAULT;
-		}
-		break;
-	default:
-		return -EINVAL;
+			if (copy_to_user((void *)arg, (void *)&ipcore_settings,
+								sizeof(struct genip_settings))) {
+				dev_err(fp->private_data, "error while copying settings to user space\n");
+				return -EFAULT;
+			}
+			break;
+
+		// return connected streaming device
+		case GENIP_IOCTL_NR_STREAM_DEV:
+			while (str_idx < gdev->connected_stream_dev_count) {
+				strncpy(stream_dev[str_idx].dev_name, gdev->stream_dev[str_idx]->dev_name, DEV_NAME_MAX_LEN);
+				stream_dev[str_idx].layer = gdev->stream_dev[str_idx]->layer;
+				cpy_size += sizeof(struct genip_stream_dev);
+				str_idx++;
+			}
+
+			if (copy_to_user((struct genip_stream_dev *)arg, (struct genip_stream_dev *)stream_dev, cpy_size)) {
+				dev_err(fp->private_data, "error while copying device name to user space\n");
+				return -EFAULT;
+			}
+			break;
+
+		// return the count of connected streaming device
+		case GENIP_IOCTL_NR_STREAM_DEV_COUNT:
+			str_count = gdev->connected_stream_dev_count;
+
+			if (copy_to_user((int *)arg, (int *)&str_count, sizeof(int))) {
+				dev_err(fp->private_data, "error while copying device name to user space\n");
+				return -EFAULT;
+			}
+			break;
+
+		default:
+			return -EINVAL;
 	}
 	return 0;
 }

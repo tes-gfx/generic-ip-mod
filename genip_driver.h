@@ -19,6 +19,8 @@ struct genip_device { // TODO replace unsigned long with u32 etc (maybe dont????
 	wait_queue_head_t irq_waitq;
 	dev_t dev_t;
 	struct device *base_dev;
+	struct genip_stream_dev *stream_dev[GENIP_MAX_STREAMS];
+	int connected_stream_dev_count;
 	const struct genip_platform_data *platform_data;
 };
 
