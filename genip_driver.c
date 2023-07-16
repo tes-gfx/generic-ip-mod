@@ -44,6 +44,8 @@ static const struct of_device_id genip_of_ids[] = {
 	 .data = &genip_d2d_pdata},
 	{.compatible = GENIP_COMPAT_STR_FBD,
 	 .data = &genip_fbd_pdata},
+	{.compatible = GENIP_COMPAT_STR_DSW,
+	 .data = &genip_dsw_pdata},
 	{}};
 static struct platform_driver genip_driver = {
 	.driver = {
